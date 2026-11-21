@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Новая запись — Парикмахерская «Стиль»</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header>
+    <h1>Парикмахерская «Стиль»</h1>
+    <nav>
+        <a href="/applications">Мои записи</a>
+        <button onclick="logout()">Выйти</button>
+    </nav>
+</header>
+<div class="container auth-box">
+    <h2>Запись на услугу стилиста</h2>
+    <form id="appForm">
+        <label>Выберите услугу стилиста</label>
+        <select id="service_id" required></select>
+        <label>Дата и время визита</label>
+        <input type="datetime-local" id="start_date" required>
+        <label>Способ оплаты</label>
+        <select id="payment_method_id" required>
+            <option value="1">Наличными в салоне</option>
+            <option value="2">Банковской картой / СБП</option>
+        </select>
+        <button type="submit" class="primary">Оформить запись</button>
+    </form>
+    <div id="msg" class="msg"></div>
+</div>
+<script>
+const user = JSON.parse(localStorage.getItem('user'));
+if (!user) window.location.href = '/login';
+function logout() { localStorage.removeItem('user'); window.location.href = '/login'; }
+
+async function loadServices() {
+    const res = await fetch('/api/services');
+    const services = await res.json();
+    const sel = document.getElementById('service_id');
+    services.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = `${s.name} — ${s.price} ₽ (${s.duration_min} мин.)`;
+        sel.appendChild(opt);
+    });
+}
+loadServices();
+
+document.getElementById('appForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const res = await fetch('/api/applications', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            user_id: user.id,
+            service_id: document.getElementById('service_id').value,
+            start_date: document.getElementById('start_date').value.replace('T', ' '),
+            payment_method_id: document.getElementById('payment_method_id').value
+        })
+    });
+    const data = await res.json();
+    const msg = document.getElementById('msg');
+    if (res.ok) {
+        msg.className = 'msg success';
+        msg.textContent = data.message;
+        setTimeout(() => window.location.href = '/applications', 1000);
+    } else {
+        msg.className = 'msg error';
+        msg.textContent = data.error;
+    }
+};
+</script>
+</body>
+</html>

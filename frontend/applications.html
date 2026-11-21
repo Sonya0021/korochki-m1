@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мои записи — Парикмахерская «Стиль»</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header>
+    <h1>Парикмахерская «Стиль»</h1>
+    <nav>
+        <a href="/create_application">+ Записаться на услугу</a>
+        <button onclick="logout()">Выйти</button>
+    </nav>
+</header>
+<div class="container">
+    <h2>Мои записи к стилистам (<span id="userName"></span>)</h2>
+    <div class="summary-card">Итоговая сумма по чеку (SUM): <span id="totalSum">0</span> ₽</div>
+    <table>
+        <thead>
+            <tr>
+                <th>№</th>
+                <th>Услуга стилиста</th>
+                <th>Длительность</th>
+                <th>Стоимость</th>
+                <th>Дата и время</th>
+                <th>Оплата</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody id="appsTable"></tbody>
+    </table>
+
+    <hr style="margin: 30px 0;">
+    <h3>Оставить отзыв о работе стилиста</h3>
+    <form id="reviewForm">
+        <textarea id="reviewText" rows="3" placeholder="Напишите ваши впечатления о стрижке или окрашивании..." required></textarea>
+        <button type="submit" class="primary" style="max-width: 240px;">Отправить отзыв</button>
+    </form>
+    <div id="revMsg" class="msg"></div>
+</div>
+<script>
+const user = JSON.parse(localStorage.getItem('user'));
+if (!user) window.location.href = '/login';
+document.getElementById('userName').textContent = user.full_name;
+function logout() { localStorage.removeItem('user'); window.location.href = '/login'; }
+
+async function loadApps() {
+    const res = await fetch('/api/applications/my?user_id=' + user.id);
+    const data = await res.json();
+    document.getElementById('totalSum').textContent = data.total_sum.toFixed(2);
+    const tbody = document.getElementById('appsTable');
+    tbody.innerHTML = '';
+    data.applications.forEach(a => {
+        tbody.innerHTML += `<tr>
+            <td>${a.id}</td>
+            <td>${a.service_name}</td>
+            <td>${a.duration_min} мин.</td>
+            <td>${a.price} ₽</td>
+            <td>${a.start_date}</td>
+            <td>${a.payment_method}</td>
+            <td><span class="badge">${a.status}</span></td>
+        </tr>`;
+    });
+}
+loadApps();
+
+document.getElementById('reviewForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_id: user.id, text: document.getElementById('reviewText').value })
+    });
+    const data = await res.json();
+    const msg = document.getElementById('revMsg');
+    msg.className = res.ok ? 'msg success' : 'msg error';
+    msg.textContent = data.message || data.error;
+    if (res.ok) document.getElementById('reviewText').value = '';
+};
+</script>
+</body>
+</html>

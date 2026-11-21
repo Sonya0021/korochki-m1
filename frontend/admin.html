@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель администратора — Парикмахерская «Стиль»</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header>
+    <h1>Панель администратора — Парикмахерская «Стиль»</h1>
+    <nav><button onclick="logout()">Выйти</button></nav>
+</header>
+<div class="container">
+    <h2>Все записи клиентов</h2>
+    <div class="summary-card">Общая сумма по всем чекам салона (SUM): <span id="totalRev">0</span> ₽</div>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Клиент</th>
+                <th>Телефон</th>
+                <th>Услуга</th>
+                <th>Цена</th>
+                <th>Дата</th>
+                <th>Оплата</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody id="adminTable"></tbody>
+    </table>
+</div>
+<script>
+const user = JSON.parse(localStorage.getItem('user'));
+if (!user || user.role !== 'admin') window.location.href = '/login';
+function logout() { localStorage.removeItem('user'); window.location.href = '/login'; }
+
+async function loadAll() {
+    const res = await fetch('/api/admin/applications');
+    const data = await res.json();
+    document.getElementById('totalRev').textContent = data.total_revenue.toFixed(2);
+    const tbody = document.getElementById('adminTable');
+    tbody.innerHTML = '';
+    data.applications.forEach(a => {
+        tbody.innerHTML += `<tr>
+            <td>${a.id}</td>
+            <td>${a.client_name}</td>
+            <td>${a.phone}</td>
+            <td>${a.service_name} (${a.duration_min} мин.)</td>
+            <td>${a.price} ₽</td>
+            <td>${a.start_date}</td>
+            <td>${a.payment_method}</td>
+            <td>
+                <select onchange="changeStatus(${a.id}, this.value)">
+                    <option value="1" ${a.status_id == 1 ? 'selected' : ''}>Новая</option>
+                    <option value="2" ${a.status_id == 2 ? 'selected' : ''}>Идёт обучение</option>
+                    <option value="3" ${a.status_id == 3 ? 'selected' : ''}>Обучение завершено</option>
+                </select>
+            </td>
+        </tr>`;
+    });
+}
+
+async function changeStatus(id, status_id) {
+    await fetch(`/api/admin/applications/${id}/status`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ status_id })
+    });
+    loadAll();
+}
+loadAll();
+</script>
+</body>
+</html>

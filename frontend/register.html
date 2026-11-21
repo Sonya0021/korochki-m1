@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация — Парикмахерская «Стиль»</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header><h1>Парикмахерская «Стиль» — Запись к стилистам</h1></header>
+<div class="container auth-box">
+    <h2>Регистрация клиента</h2>
+    <form id="regForm">
+        <label>Логин (латиница и цифры, от 6 символов)</label>
+        <input type="text" id="login" pattern="[A-Za-z0-9]{6,}" required placeholder="ivanov2026">
+        <label>Пароль (минимум 8 символов)</label>
+        <input type="password" id="password" minlength="8" required placeholder="••••••••">
+        <label>ФИО (кириллица)</label>
+        <input type="text" id="full_name" required placeholder="Петрова Мария Ивановна">
+        <label>Телефон (формат 8(XXX)XXX-XX-XX)</label>
+        <input type="text" id="phone" pattern="8\(\d{3}\)\d{3}-\d{2}-\d{2}" required placeholder="8(916)555-44-33">
+        <label>Email</label>
+        <input type="email" id="email" required placeholder="client@example.ru">
+        <button type="submit" class="primary">Зарегистрироваться</button>
+    </form>
+    <div id="msg" class="msg"></div>
+    <div class="link-row">Уже есть аккаунт? <a href="/login">Войти</a></div>
+</div>
+<script>
+document.getElementById('regForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            login: document.getElementById('login').value,
+            password: document.getElementById('password').value,
+            full_name: document.getElementById('full_name').value,
+            phone: document.getElementById('phone').value,
+            email: document.getElementById('email').value
+        })
+    });
+    const data = await res.json();
+    const msg = document.getElementById('msg');
+    if (!res.ok) {
+        msg.className = 'msg error';
+        msg.textContent = data.error;
+    } else {
+        msg.className = 'msg success';
+        msg.textContent = data.message + ' Перенаправление...';
+        setTimeout(() => window.location.href = '/login', 1200);
+    }
+};
+</script>
+</body>
+</html>
